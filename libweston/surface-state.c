@@ -298,7 +298,8 @@ weston_surface_apply_subsurface_order(struct weston_surface *surface)
 		wl_list_for_each(view, &sub->surface->views, surface_link)
 			weston_view_geometry_dirty(view);
 	}
-	weston_assert_true(comp, comp->view_list_needs_rebuild);
+	if (!wl_list_empty(&surface->views))
+		weston_assert_true(comp, comp->view_list_needs_rebuild);
 }
 
 /* Translate pending damage in buffer co-ordinates to surface
