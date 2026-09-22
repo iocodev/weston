@@ -59,6 +59,7 @@
 #include "weston.h"
 #include "weston-private.h"
 
+#include <libweston/backend-ebc.h>
 #include <libweston/backend-drm.h>
 #include <libweston/backend-headless.h>
 #include <libweston/backend-pipewire.h>
@@ -689,6 +690,9 @@ usage(int error_code)
 #endif
 #if defined(BUILD_HEADLESS_COMPOSITOR)
 			"\t\t\t\theadless\n"
+#endif
+#if defined(BUILD_EBC_COMPOSITOR)
+			"\t\t\t\tebc\n"
 #endif
 #if defined(BUILD_PIPEWIRE_COMPOSITOR)
 			"\t\t\t\tpipewire\n"
@@ -3414,6 +3418,41 @@ wet_compositor_load_backend(struct weston_compositor *compositor,
 }
 
 static int
+load_ebc_backend(struct weston_compositor *c,
+		 int *argc, char **argv, struct weston_config *wc,
+		 enum weston_renderer_type renderer)
+{
+	struct weston_ebc_backend_config config = {{ 0, }};
+	struct weston_config_section *section;
+	struct wet_backend *wb;
+
+	section = weston_config_get_section(wc, "ebc", NULL, NULL);
+	weston_config_section_get_string(section, "mode",
+					 &config.disp_mode_name, "auto");
+	weston_config_section_get_string(section, "seat",
+					 &config.seat_id, NULL);
+	weston_config_section_get_int(section, "trans-type",
+				      &config.trans_type, 0);
+	weston_config_section_get_int(section, "trans-dur-ms",
+				      &config.trans_dur_ms, 0);
+	weston_config_section_get_bool(section, "initial-full-refresh",
+				       &config.initial_full_refresh, true);
+	weston_config_section_get_int(section, "full-refresh-frames",
+				      &config.full_refresh_frames, 0);
+
+	config.renderer = WESTON_RENDERER_PIXMAN;
+	config.base.struct_version = WESTON_EBC_BACKEND_CONFIG_VERSION;
+	config.base.struct_size = sizeof(struct weston_ebc_backend_config);
+
+	wb = wet_compositor_load_backend(c, WESTON_BACKEND_EBC, &config.base,
+					 simple_heads_changed, NULL);
+	if (!wb)
+		return -1;
+
+	return 0;
+}
+
+static int
 load_drm_backend(struct weston_compositor *c, int *argc, char **argv,
 		 struct weston_config *wc, enum weston_renderer_type renderer)
 {
@@ -4238,6 +4277,9 @@ load_backend(struct weston_compositor *compositor, const char *name,
 	case WESTON_BACKEND_HEADLESS:
 		return load_headless_backend(compositor, argc, argv, config,
 					     renderer);
+	case WESTON_BACKEND_EBC:
+		return load_ebc_backend(compositor, argc, argv, config,
+					renderer);
 	case WESTON_BACKEND_PIPEWIRE:
 		return load_pipewire_backend(compositor, argc, argv, config,
 					     renderer);

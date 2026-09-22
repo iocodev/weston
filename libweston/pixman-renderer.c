@@ -1005,6 +1005,13 @@ pixman_renderer_attach_dmabuf(struct weston_surface *es,
 					     buffer->width, vstride,
 					     data->ptr + attributes->offset[0],
 					     attributes->stride[0]);
+	if (!ps->image) {
+		weston_log("pixman-renderer: failed to import dmabuf "
+			   "(%dx%d stride %d format 0x%x)\n",
+			   buffer->width, vstride,
+			   attributes->stride[0], attributes->format);
+		goto err;
+	}
 
 	pixman_image_set_dma_fd(ps->image, attributes->fd[0]);
 
@@ -1015,6 +1022,11 @@ pixman_renderer_attach_dmabuf(struct weston_surface *es,
 	return;
 err:
 	pixman_renderer_destroy_dmabuf_data(data);
+	/* The data may have come from the dmabuf user_data (e.g. the Mali
+	 * opaque-buffer path reuses buffer->renderer_private); we already
+	 * freed it, so clear the reference or buffer destruction will
+	 * free it a second time. */
+	linux_dmabuf_buffer_set_user_data(dmabuf, NULL, NULL);
 
 	weston_buffer_reference(&ps->buffer_ref, NULL,
 				BUFFER_WILL_NOT_BE_ACCESSED);
@@ -1086,6 +1098,21 @@ pixman_renderer_attach(struct weston_paint_node *pnode)
 		attributes->n_planes = 1;
 		attributes->fd[0] = info->dma_fd;
 		attributes->stride[0] = info->stride;
+		/* Mali's mali_buffer_sharing_info sometimes leaves stride
+		 * uninitialized (observed 0x7fffffff), which makes
+		 * pixman_image_create_bits() fail and the window render
+		 * as a black box.  A valid linear stride is always
+		 * 32-bit aligned, so treat any non-aligned value as
+		 * garbage and fall back to the tight linear stride. */
+		if (attributes->stride[0] <= 0 ||
+		    (attributes->stride[0] & 3) != 0) {
+			attributes->stride[0] =
+				(attributes->width *
+				 buffer->pixel_format->bpp / 8 + 3) & ~3;
+			weston_log("ebc: mali opaque stride %d invalid, "
+				   "using tight stride %d\n",
+				   info->stride, attributes->stride[0]);
+		}
 
 		/* Reuse the old user_data */
 		linux_dmabuf_buffer_set_user_data(&dmabuf,
