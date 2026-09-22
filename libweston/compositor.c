@@ -10468,6 +10468,7 @@ weston_compositor_get_user_data(struct weston_compositor *compositor)
 
 static const char * const backend_map[] = {
 	[WESTON_BACKEND_DRM] =		"drm-backend.so",
+	[WESTON_BACKEND_EBC] =		"ebc-backend.so",
 	[WESTON_BACKEND_HEADLESS] =	"headless-backend.so",
 	[WESTON_BACKEND_PIPEWIRE] =	"pipewire-backend.so",
 	[WESTON_BACKEND_RDP] =		"rdp-backend.so",

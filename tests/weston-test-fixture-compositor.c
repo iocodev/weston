@@ -213,6 +213,7 @@ backend_to_str(enum weston_compositor_backend b)
 		[WESTON_BACKEND_VNC] = "vnc",
 		[WESTON_BACKEND_WAYLAND] = "wayland",
 		[WESTON_BACKEND_X11] = "x11",
+		[WESTON_BACKEND_EBC] = "ebc",
 	};
 	assert(b >= 0 && b < ARRAY_LENGTH(names));
 	return names[b];

@@ -57,9 +57,21 @@ option(
 	description: 'Weston backend: X11 (nested)'
 )
 option(
+	'backend-ebc',
+	type: 'boolean',
+	value: false,
+	description: 'Weston backend: EBC e-ink (Rockchip rkebc server)'
+)
+option(
+	'ebc-rkebc-prefix',
+	type: 'string',
+	value: '',
+	description: 'EBC backend: prefix of the Rockchip rkebc SDK (contains include/rkebc and lib/librkebc.so)'
+)
+option(
 	'backend-default',
 	type: 'combo',
-	choices: [ 'auto', 'drm', 'wayland', 'x11', 'headless', 'rdp' ],
+	choices: [ 'auto', 'drm', 'wayland', 'x11', 'headless', 'rdp', 'ebc' ],
 	value: 'drm',
 	description: 'Default backend when no parent display server detected'
 )

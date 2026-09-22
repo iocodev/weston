@@ -45,6 +45,7 @@ struct {
 	{ "vnc", "vnc-backend.so", WESTON_BACKEND_VNC },
 	{ "wayland", "wayland-backend.so", WESTON_BACKEND_WAYLAND },
 	{ "x11", "x11-backend.so", WESTON_BACKEND_X11 },
+	{ "ebc", "ebc-backend.so", WESTON_BACKEND_EBC },
 };
 
 bool

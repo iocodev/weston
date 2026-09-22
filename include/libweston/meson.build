@@ -14,6 +14,7 @@ install_headers(
 )
 
 backend_drm_h =      files('backend-drm.h')
+backend_ebc_h =      files('backend-ebc.h')
 backend_headless_h = files('backend-headless.h')
 backend_pipewire_h = files('backend-pipewire.h')
 backend_rdp_h =      files('backend-rdp.h')
