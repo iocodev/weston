@@ -1103,15 +1103,39 @@ pixman_renderer_attach(struct weston_paint_node *pnode)
 		 * pixman_image_create_bits() fail and the window render
 		 * as a black box.  A valid linear stride is always
 		 * 32-bit aligned, so treat any non-aligned value as
-		 * garbage and fall back to the tight linear stride. */
+		 * garbage and recover the real stride from the dma-buf
+		 * size (st_size / height) when possible, else fall back
+		 * to the tight linear stride.  Only warn once to avoid
+		 * log spam on every repaint. */
 		if (attributes->stride[0] <= 0 ||
 		    (attributes->stride[0] & 3) != 0) {
-			attributes->stride[0] =
-				(attributes->width *
-				 buffer->pixel_format->bpp / 8 + 3) & ~3;
-			weston_log("ebc: mali opaque stride %d invalid, "
-				   "using tight stride %d\n",
-				   info->stride, attributes->stride[0]);
+			struct stat s;
+			uint32_t real_stride = 0;
+			static bool warned;
+
+			if (fstat(info->dma_fd, &s) == 0 &&
+			    s.st_size >= (int64_t)attributes->width *
+					 (int64_t)attributes->height &&
+			    (s.st_size % attributes->height) == 0) {
+				real_stride = s.st_size / attributes->height;
+				if (real_stride < attributes->width ||
+				    (real_stride & 3) != 0)
+					real_stride = 0;
+			}
+			if (real_stride)
+				attributes->stride[0] = real_stride;
+			else
+				attributes->stride[0] =
+					(attributes->width *
+					 buffer->pixel_format->bpp / 8 + 3) & ~3;
+			if (!warned) {
+				weston_log("ebc: mali opaque stride %d invalid, "
+					   "using stride %d (st_size %lld w %d h %d)\n",
+					   info->stride, attributes->stride[0],
+					   (long long)s.st_size,
+					   attributes->width, attributes->height);
+				warned = true;
+			}
 		}
 
 		/* Reuse the old user_data */
